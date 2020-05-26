@@ -1,2 +1,3 @@
 This folder should contain images from a Google Images bulk download that have been cleaned and are ready to be used by the calssifier.
 Images should be titled with their breed label ("dachshund" or "borzoi") and there can be one image labeled "test" for deployment.
+Two sample images are provided.
