@@ -1,5 +1,4 @@
-# Image-Classifier
-*work in progress
+# Image-Classifier *work in progress*
 This project is a binary classifier for images of two different kinds of dogs. 
 
 This is the script for a basic supervised learning image classification model. The data are excluded from this repository but can be provided on request or supplemented with one's own image wrangling. The dataset is structured as a folder of roughly 500 .jpg files. The files are titled according to an index number and the breed of dog that they represent ("borzoi" or "dachshund"). The file img_save.py pulls images from a folder of a Google Images bulk download and saves them into the "images" folder.
