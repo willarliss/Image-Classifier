@@ -46,7 +46,7 @@ class DogClassifier:
         self.y = np.array(target)
     
     # Train the classifier. Only fit the classifier if arg fit==True, otherwise 
-    # training data _X_train and _y_train is not needed
+    # training data X_train and y_train is not needed
     def train(self, classif, X_train=None, y_train=None, fit=True):
         
         self.clf = Pipeline(
@@ -83,7 +83,7 @@ class DogClassifier:
         pred = self.clf.predict(self.test)
         [print('DACHSHUND') if pred == 1 else print('BORZOI')]
         
-        # Print the probability of accuracy
+        # Print the predicted probability of accuracy
         try:
             prob = self.clf.predict_proba(self.test)[0][pred][0]
             print('@ {}%'.format(format(prob*100, '3.1f')))
