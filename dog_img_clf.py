@@ -34,7 +34,7 @@ class DogClassifier:
             img = resize(img, (500,500), anti_aliasing=True)
             img = color.colorconv.rgb2gray(img)
             
-            # 0=borzoi 1=dachshund
+            # Borzoi: 0, Dachshund: 1
             if 'borzoi' in file:
                 data.append(np.concatenate([i for i in img]))
                 target.append(0)
