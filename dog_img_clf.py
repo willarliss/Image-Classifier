@@ -99,7 +99,7 @@ class DogClassifier:
 def grid_search(brain): 
     """Grid search parameter optimization using k-fold cross validation"""
     
-    f = open('params.txt', 'a')
+    f = open('params.txt', 'w')
     
     classifiers = {
         'SVC': SVC(gamma='scale'),
