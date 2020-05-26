@@ -188,7 +188,7 @@ if __name__ == '__main__':
     
     model = DogClassifier()
     
-    # grid_search(model)
-    cross_validation(model)
-    # deployment_test(model)
+#    grid_search(model)
+#    cross_validation(model)
+#    deployment_test(model)
     
