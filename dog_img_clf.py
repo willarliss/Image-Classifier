@@ -106,7 +106,7 @@ def grid_search(brain):
         'SGD': SGDClassifier(),
         'KNN': KNeighborsClassifier(),
         'LDA': LinearDiscriminantAnalysis(),
-        'GNB' : GaussianNB(),
+        'GNB': GaussianNB(),
         }
     
     parameters = {
@@ -154,7 +154,7 @@ def cross_validation(brain):
         'SGD': SGDClassifier(alpha=0.0001, loss='hinge', penalty='elasticnet'),
         'KNN': KNeighborsClassifier(algorithm='ball_tree', n_neighbors=15, weights='uniform'),
         'LDA': LinearDiscriminantAnalysis(solver='svd'),
-        'GNB' : GaussianNB(),
+        'GNB': GaussianNB(),
         }
     
     for train_index, test_index in skf.split(brain.X, brain.y):
