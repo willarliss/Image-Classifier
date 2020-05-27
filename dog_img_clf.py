@@ -10,7 +10,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import SGDClassifier
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import f1_score, confusion_matrix, classification_report
+from sklearn.metrics import f1_score, confusion_matrix
 from sklearn.model_selection import StratifiedKFold, GridSearchCV
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
