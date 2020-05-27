@@ -6,11 +6,11 @@ from glob import glob
 from skimage import color
 from skimage.transform import resize
 from sklearn.svm import SVC
-from sklearn.metrics import f1_score
 from sklearn.pipeline import Pipeline
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import SGDClassifier
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import f1_score, confusion_matrix, classification_report
 from sklearn.model_selection import StratifiedKFold, GridSearchCV
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
@@ -27,14 +27,11 @@ class DogClassifier:
         # Iterate over every file in images folder
         for file in files:
             
+            # Read image and preprocess
             raw = Image.open(file)
+            img = self.prep(raw)
             
-            # Uniform dimensionality
-            img = np.array(raw)
-            img = resize(img, (500,500), anti_aliasing=True)
-            img = color.colorconv.rgb2gray(img)
-            
-            # Borzoi: 0, Dachshund: 1
+            # 0=borzoi 1=dachshund
             if 'borzoi' in file:
                 data.append(np.concatenate([i for i in img]))
                 target.append(0)
@@ -45,15 +42,26 @@ class DogClassifier:
         self.X = np.array(data)
         self.y = np.array(target)
     
+    # Preprocess image data
+    def prep(self, img_raw):
+        
+        img_raw = np.array(img_raw)
+        img_sized = resize(img_raw, (500,500), anti_aliasing=True)
+        img_color = color.colorconv.rgb2gray(img_sized)
+        thresh = (img_color.min()+img_color.max()) / 2
+        img_thresh = np.where(img_color<thresh, 0, img_color)
+        
+        return img_thresh
+    
     # Train the classifier. Only fit the classifier if arg fit==True, otherwise 
-    # training data X_train and y_train is not needed
+    # training data _X_train and _y_train is not needed
     def train(self, classif, X_train=None, y_train=None, fit=True):
         
         self.clf = Pipeline(
             [('clf', classif)],
             )
         
-        if fit==True:
+        if fit:
             self.clf.fit(X_train, y_train)
         
         return self.clf
@@ -75,15 +83,13 @@ class DogClassifier:
     def deploy(self, raw):
         
         # Preprocess image in same way as training data
-        img = np.array(raw)
-        img = resize(img, (500,500), anti_aliasing=True)
-        img = color.colorconv.rgb2gray(img)
+        img = self.prep(raw)
         
         self.test = np.array([np.concatenate([i for i in img])])
         pred = self.clf.predict(self.test)
         [print('DACHSHUND') if pred == 1 else print('BORZOI')]
         
-        # Print the predicted probability of accuracy
+        # Print the probability of accuracy
         try:
             prob = self.clf.predict_proba(self.test)[0][pred][0]
             print('@ {}%'.format(format(prob*100, '3.1f')))
@@ -106,7 +112,7 @@ def grid_search(brain):
         'SGD': SGDClassifier(),
         'KNN': KNeighborsClassifier(),
         'LDA': LinearDiscriminantAnalysis(),
-        'GNB': GaussianNB(),
+        'NB' : GaussianNB(),
         }
     
     parameters = {
@@ -133,7 +139,7 @@ def grid_search(brain):
     for name, params in parameters.items():
         
         brain.train(classifiers[name], fit=False)
-        gs_clf = GridSearchCV(brain.clf, params, cv=3, refit=True, scoring='f1')
+        gs_clf = GridSearchCV(brain.clf, params, cv=5, refit=True, scoring='f1')
         gs_clf.fit(brain.X, brain.y)
         
         print(name, gs_clf.best_score_, gs_clf.best_params_, '\n', file=f) 
@@ -146,15 +152,16 @@ def cross_validation(brain):
     """Stratified k-fold cross validation using splits of 5. Reports accuracies and 
     F1 scores for given classifiers using splits of 5"""
     
-    skf = StratifiedKFold(n_splits=3, shuffle=True)
+    skf = StratifiedKFold(n_splits=5, shuffle=True)
+    cm = []
+    
     name = 'KNN'
-
     classifiers = {
         'SVC': SVC(gamma='scale', C=1, kernel='poly', degree=3),
         'SGD': SGDClassifier(alpha=0.0001, loss='hinge', penalty='elasticnet'),
         'KNN': KNeighborsClassifier(algorithm='ball_tree', n_neighbors=15, weights='uniform'),
         'LDA': LinearDiscriminantAnalysis(solver='svd'),
-        'GNB': GaussianNB(),
+        'NB' : GaussianNB(),
         }
     
     for train_index, test_index in skf.split(brain.X, brain.y):
@@ -168,7 +175,15 @@ def cross_validation(brain):
         
         f1 = f1_score(y_test, preds)
         acc = brain.evaluate(y_test)
+        cm.append(confusion_matrix(y_test, preds))
         print(name, format(acc, '1.3f'), format(f1, '1.3f'), '\n')
+    
+    plt.imshow(sum(cm), interpolation='nearest')
+    plt.colorbar()
+    plt.xticks(range(2))
+    plt.yticks(range(2))    
+    plt.ylabel('true value')
+    plt.xlabel('prediction')
     
     
     
@@ -188,7 +203,7 @@ if __name__ == '__main__':
     
     model = DogClassifier()
     
-#    grid_search(model)
-#    cross_validation(model)
-#    deployment_test(model)
+    # grid_search(model)
+    cross_validation(model)
+    # deployment_test(model)
     
