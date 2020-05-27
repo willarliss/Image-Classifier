@@ -155,6 +155,7 @@ def cross_validation(brain):
     skf = StratifiedKFold(n_splits=5, shuffle=True)
     cm = []
     
+    # Select classifier to use
     name = 'KNN'
     classifiers = {
         'SVC': SVC(gamma='scale', C=1, kernel='poly', degree=3),
