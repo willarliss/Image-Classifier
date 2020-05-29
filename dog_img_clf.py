@@ -137,7 +137,7 @@ def grid_search(brain):
         
 def cross_validation(brain): 
     """Stratified k-fold cross validation using splits of 5. Reports accuracies and 
-    F1 scores for given classifiers using splits of 5"""
+    F1 scores for given classifiers using splits of 7"""
     
     skf = StratifiedKFold(n_splits=7, shuffle=True)
     cm = []
