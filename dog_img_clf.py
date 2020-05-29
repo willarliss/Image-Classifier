@@ -45,20 +45,15 @@ class DogClassifier:
     # Preprocess image data
     def prep(self, img_raw):
         
-        # Transform the image to uniform dimensionality
-        img_sized = resize(np.array(img_raw), (self.s, self.s), anti_aliasing=True)
+        img_raw = np.array(img_raw)
+        img_sized = resize(img_raw, (self.s, self.s), anti_aliasing=True)
         img_color = color.colorconv.rgb2gray(img_sized)
         
-        # Threshold the image
+        # Threshold image
         thresh = (img_color.min()+img_color.max())/2 
         img_thresh = np.where(img_color<thresh, 0, img_color)
         
-        # De-mean and standardize the image
-        ss = StandardScaler()
-        ss.fit(img_thresh)
-        img_scale = ss.transform(img_thresh)
-        
-        return np.concatenate([i for i in img_scale])
+        return np.concatenate([i for i in img_thresh])
     
     # Train the classifier. Only fit the classifier if arg fit==True, otherwise 
     # training data _X_train and _y_train is not needed
@@ -70,7 +65,6 @@ class DogClassifier:
         
         if fit:
             self.clf.fit(X_train, y_train)
-            self.params = self.clf.get_params(deep=True)
         
         return self.clf
         
@@ -95,10 +89,10 @@ def grid_search(brain):
     f = open('params.txt', 'w')
     
     classifiers = {
-        'SVC': svm.SVC(random_state=37),
-        'NuSVC': svm.NuSVC(random_state=37),
+        'SVC'      : svm.SVC(random_state=37),
+        'NuSVC'    : svm.NuSVC(random_state=37),
         'LinearSVC': svm.LinearSVC(random_state=37),
-        'SGD': SGDClassifier(random_state=37, loss='hinge'),
+        'SGD'      : SGDClassifier(random_state=37, loss='hinge'),
         }
     
     parameters = {
@@ -151,10 +145,10 @@ def cross_validation(brain):
     
     name = 'SGD'
     classifiers = { 
-        'SVC': svm.SVC(degree=2, gamma='scale', kernel='linear', tol=0.01),
-        'NuSVC': svm.NuSVC(degree=2, gamma='scale', kernel='rbf', nu=0.5, tol=0.01),
+        'SVC'      : svm.SVC(degree=2, gamma='scale', kernel='linear', tol=0.01),
+        'NuSVC'    : svm.NuSVC(degree=2, gamma='scale', kernel='rbf', nu=0.5, tol=0.01),
         'LinearSVC': svm.LinearSVC(C=0.01, loss='squared_hinge', penalty='l2', tol=0.01),
-        'SGD': SGDClassifier(loss='hinge', alpha=0.001, eta0=0.001, learning_rate='invscaling', penalty='l2', tol=0.0001),
+        'SGD'      : SGDClassifier(loss='hinge', alpha=0.001, eta0=0.001, learning_rate='invscaling', penalty='l2', tol=0.0001),
         }
             
     for train_index, test_index in skf.split(brain.X, brain.y):
@@ -172,6 +166,7 @@ def cross_validation(brain):
         print(name, format(acc, '1.3f'), format(f1, '1.3f'), '\n')
     
     plt.imshow(sum(cm), interpolation='nearest')
+    plt.title(name)
     plt.colorbar()
     plt.xticks(range(2))
     plt.yticks(range(2))    
@@ -208,11 +203,11 @@ if __name__ == '__main__':
     
     model = DogClassifier(folder='images', size=200)
     
-    # grid_search(model)
-    # cross_validation(model)
-    # build_pkl(model)
+    #grid_search(model)
+    #cross_validation(model)
+    #build_pkl(model)
     
-    # file = Image.open('images\\test.jpg')
-    # deploy_pkl(file)
+    #file = Image.open('images\\test.jpg')
+    #deploy_pkl(file)
     
     
