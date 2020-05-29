@@ -55,7 +55,7 @@ class DogClassifier:
         return np.concatenate([i for i in img_thresh])
     
     # Train the classifier. Only fit the classifier if arg fit==True, otherwise 
-    # training data _X_train and _y_train is not needed
+    # training data X_train and y_train is not needed
     def train(self, classif, X_train=None, y_train=None, fit=True):
         
         self.clf = Pipeline(
