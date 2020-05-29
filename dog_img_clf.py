@@ -8,7 +8,6 @@ from skimage.transform import resize
 from sklearn import svm
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import SGDClassifier
-from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import f1_score, confusion_matrix
 from sklearn.model_selection import StratifiedKFold, GridSearchCV
 
