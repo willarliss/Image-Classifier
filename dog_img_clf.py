@@ -143,7 +143,7 @@ def cross_validation(brain):
     skf = StratifiedKFold(n_splits=7, shuffle=True)
     cm = []
     
-    name = 'SGD'
+    name = 'NuSVC'
     classifiers = { 
         'SVC'      : svm.SVC(degree=2, gamma='scale', kernel='linear', tol=0.01),
         'NuSVC'    : svm.NuSVC(degree=2, gamma='scale', kernel='rbf', nu=0.5, tol=0.01),
