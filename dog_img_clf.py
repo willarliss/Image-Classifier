@@ -58,7 +58,7 @@ class DogClassifier:
         ss.fit(img_thresh)
         img_scale = ss.transform(img_thresh)
         
-        return np.concatenate([i for i in img_thresh])
+        return np.concatenate([i for i in img_scale])
     
     # Train the classifier. Only fit the classifier if arg fit==True, otherwise 
     # training data _X_train and _y_train is not needed
