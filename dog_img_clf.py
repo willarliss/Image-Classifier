@@ -1,27 +1,27 @@
-import os
+import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 from glob import glob
 from skimage import color
 from skimage.transform import resize
-from sklearn.svm import SVC
+from sklearn import svm
 from sklearn.pipeline import Pipeline
-from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import SGDClassifier
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import f1_score, confusion_matrix
 from sklearn.model_selection import StratifiedKFold, GridSearchCV
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
 
 
 class DogClassifier:
     
-    # Read in and prepare data
-    def __init__(self): 
+    # Read in and prepare data. Accepts name of folder containing training data
+    # and square dimension size of the data as arguments
+    def __init__(self, folder, size): 
         
-        files = glob('./images/*')
+        self.s = size
+        files = glob(f'./{folder}/*')
         data, target = [], []
 
         # Iterate over every file in images folder
@@ -33,10 +33,10 @@ class DogClassifier:
             
             # 0=borzoi 1=dachshund
             if 'borzoi' in file:
-                data.append(np.concatenate([i for i in img]))
+                data.append(img)
                 target.append(0)
             if 'dachshund' in file:
-                data.append(np.concatenate([i for i in img]))
+                data.append(img)
                 target.append(1)            
             
         self.X = np.array(data)
@@ -45,13 +45,20 @@ class DogClassifier:
     # Preprocess image data
     def prep(self, img_raw):
         
-        img_raw = np.array(img_raw)
-        img_sized = resize(img_raw, (500,500), anti_aliasing=True)
+        # Transform the image to uniform dimensionality
+        img_sized = resize(np.array(img_raw), (self.s, self.s), anti_aliasing=True)
         img_color = color.colorconv.rgb2gray(img_sized)
-        thresh = (img_color.min()+img_color.max()) / 2
+        
+        # Threshold the image
+        thresh = (img_color.min()+img_color.max())/2 
         img_thresh = np.where(img_color<thresh, 0, img_color)
         
-        return img_thresh
+        # De-mean and standardize the image
+        ss = StandardScaler()
+        ss.fit(img_thresh)
+        img_scale = ss.transform(img_thresh)
+        
+        return np.concatenate([i for i in img_thresh])
     
     # Train the classifier. Only fit the classifier if arg fit==True, otherwise 
     # training data _X_train and _y_train is not needed
@@ -63,6 +70,7 @@ class DogClassifier:
         
         if fit:
             self.clf.fit(X_train, y_train)
+            self.params = self.clf.get_params(deep=True)
         
         return self.clf
         
@@ -78,27 +86,6 @@ class DogClassifier:
         # Return accuracy score
         self.score = np.mean(self.predictions==y_test)
         return self.score
-    
-    # Test the classifier with new images
-    def deploy(self, raw):
-        
-        # Preprocess image in same way as training data
-        img = self.prep(raw)
-        
-        self.test = np.array([np.concatenate([i for i in img])])
-        pred = self.clf.predict(self.test)
-        [print('DACHSHUND') if pred == 1 else print('BORZOI')]
-        
-        # Print the probability of accuracy
-        try:
-            prob = self.clf.predict_proba(self.test)[0][pred][0]
-            print('@ {}%'.format(format(prob*100, '3.1f')))
-        except AttributeError:
-            pass
-        
-        # Display the computer vision image
-        plt.figure()
-        plt.imshow(img)
 
 
 
@@ -108,38 +95,45 @@ def grid_search(brain):
     f = open('params.txt', 'w')
     
     classifiers = {
-        'SVC': SVC(gamma='scale'),
-        'SGD': SGDClassifier(),
-        'KNN': KNeighborsClassifier(),
-        'LDA': LinearDiscriminantAnalysis(),
-        'NB' : GaussianNB(),
+        'SVC': svm.SVC(random_state=37),
+        'NuSVC': svm.NuSVC(random_state=37),
+        'LinearSVC': svm.LinearSVC(random_state=37),
+        'SGD': SGDClassifier(random_state=37, loss='hinge'),
         }
     
     parameters = {
         'SVC': {
-            'clf__kernel'     : ('linear', 'poly', 'sigmoid'),
-            'clf__degree'     : (2, 3, 4), 
-            'clf__C'          : (1, 0.1, 0.01, 0.001),
+            'clf__kernel'       : ('linear', 'poly', 'rbf', 'sigmoid'),
+            'clf__degree'       : (2, 3, 4, 5), 
+            'clf__gamma'        : ('scale', 'auto'),
+            'clf__tol'          : (1e-2, 1e-3, 1e-4),
+            },
+        'NuSVC': {
+            'clf__nu'           : (.4, .5, .6),
+            'clf__kernel'       : ('linear', 'poly', 'rbf', 'sigmoid'),
+            'clf__degree'       : (2, 3, 4, 5), 
+            'clf__gamma'        : ('scale', 'auto'),
+            'clf__tol'          : (1e-2, 1e-3, 1e-4),
+            },
+        'LinearSVC': {      
+            'clf__penalty'      : ('l1', 'l2'),
+            'clf__loss'         : ('hinge', 'squared_hinge'),
+            'clf__C'            : (1, 0.1, 0.01, 0.001),
+            'clf__tol'          : (1e-2, 1e-3, 1e-4, 1e-5),
             },
         'SGD': {
-            'clf__penalty'    : ('l1', 'l2', 'elasticnet'),
-            'clf__alpha'      : (0.01, 0.001, 0.0001, 0.00001),
-            'clf__loss'       : ('hinge', 'log'),
+            'clf__penalty'      : ('l1', 'l2', 'elasticnet'),
+            'clf__alpha'        : (0.01, 0.001, 0.0001, 0.00001),
+            'clf__tol'          : (1e-2, 1e-3, 1e-4),
+            'clf__learning_rate': ('constant', 'optimal', 'invscaling'),
+            'clf__eta0'         : (0.5, 0.1, 0.001),
             },
-        'KNN': {
-            'clf__algorithm'  : ('ball_tree', 'auto', 'kd_tree'),
-            'clf__weights'    : ('uniform', 'distance'),
-            'clf__n_neighbors': (5, 10, 15),
-            },
-        'LDA': {
-            'clf__solver'     : ('svd', 'lsqr', 'eigen'),
-            },
-         }
+        }
                   
     for name, params in parameters.items():
         
         brain.train(classifiers[name], fit=False)
-        gs_clf = GridSearchCV(brain.clf, params, cv=5, refit=True, scoring='f1')
+        gs_clf = GridSearchCV(brain.clf, params, cv=3, refit=True, scoring='f1')
         gs_clf.fit(brain.X, brain.y)
         
         print(name, gs_clf.best_score_, gs_clf.best_params_, '\n', file=f) 
@@ -152,19 +146,17 @@ def cross_validation(brain):
     """Stratified k-fold cross validation using splits of 5. Reports accuracies and 
     F1 scores for given classifiers using splits of 5"""
     
-    skf = StratifiedKFold(n_splits=5, shuffle=True)
+    skf = StratifiedKFold(n_splits=7, shuffle=True)
     cm = []
     
-    # Specify classifier to use
-    name = 'KNN'
-    classifiers = {
-        'SVC': SVC(gamma='scale', C=1, kernel='poly', degree=3),
-        'SGD': SGDClassifier(alpha=0.0001, loss='hinge', penalty='elasticnet'),
-        'KNN': KNeighborsClassifier(algorithm='ball_tree', n_neighbors=15, weights='uniform'),
-        'LDA': LinearDiscriminantAnalysis(solver='svd'),
-        'NB' : GaussianNB(),
+    name = 'SGD'
+    classifiers = { 
+        'SVC': svm.SVC(degree=2, gamma='scale', kernel='linear', tol=0.01),
+        'NuSVC': svm.NuSVC(degree=2, gamma='scale', kernel='rbf', nu=0.5, tol=0.01),
+        'LinearSVC': svm.LinearSVC(C=0.01, loss='squared_hinge', penalty='l2', tol=0.01),
+        'SGD': SGDClassifier(loss='hinge', alpha=0.001, eta0=0.001, learning_rate='invscaling', penalty='l2', tol=0.0001),
         }
-    
+            
     for train_index, test_index in skf.split(brain.X, brain.y):
         
         X_train, X_test = brain.X[train_index], brain.X[test_index]
@@ -187,24 +179,40 @@ def cross_validation(brain):
     plt.xlabel('prediction')
     
     
+
+def build_pkl(brain):
     
-def deployment_test(brain):
-    """Deploy the classifier on a new image"""
+    with open('model.pkl', 'wb') as f:
+        
+        clf = svm.NuSVC(kernel='rbf', degree=2, gamma='scale', nu=0.5, tol=0.01)
+        model.train(clf, model.X, model.y)
+        
+        pickle.dump([model.prep, model.clf], f)
     
-    path = os.getcwd()+'\\images'
-    image = Image.open(os.path.join(path, 'test.jpg'))
     
-    classifier = KNeighborsClassifier(algorithm='ball_tree', n_neighbors=15, weights='uniform')
-    brain.train(classifier, brain.X, brain.y)
-    brain.deploy(image)
+
+def deploy_pkl(raw):
     
-   
+    with open('model.pkl', 'rb') as f:
+
+        model = pickle.load(f)
+        
+        img = np.array([model[0](raw)])
+        pred = model[1].predict(img)
+        
+        [print('DACHSHUND') if pred == 1 else print('BORZOI')]
+    
+    
     
 if __name__ == '__main__':
     
-    model = DogClassifier()
+    model = DogClassifier(folder='images', size=200)
     
-    #grid_search(model)
-    #cross_validation(model)
-    #deployment_test(model)
+    # grid_search(model)
+    # cross_validation(model)
+    # build_pkl(model)
+    
+    # file = Image.open('images\\test.jpg')
+    # deploy_pkl(file)
+    
     
