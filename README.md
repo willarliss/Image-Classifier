@@ -1,5 +1,4 @@
 # Image-Classifier 
-*work in progress*
 
 This project is a binary classifier for images of two different kinds of dogs. Several support vector machines are optimized and tested to find the most accurate classification algorithm. Sci-Kit Learn is the machine learning library used in building the model.
 
