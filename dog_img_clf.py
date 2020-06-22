@@ -179,9 +179,9 @@ def build_pkl(brain):
     with open('model.pkl', 'wb') as f:
         
         clf = svm.NuSVC(kernel='rbf', degree=2, gamma='scale', nu=0.5, tol=0.01)
-        model.train(clf, model.X, model.y)
+        brain.train(clf, brain.X, brain.y)
         
-        pickle.dump([model.prep, model.clf], f)
+        pickle.dump([brain.prep, brain.clf], f)
     
     
 
@@ -207,6 +207,6 @@ if __name__ == '__main__':
     #build_pkl(model)
     
     #file = Image.open('images\\test.jpg')
-    #deploy_pkl(file)
+    #deploy_pkl(model, file)
     
     
