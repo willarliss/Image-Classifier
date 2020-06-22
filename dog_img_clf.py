@@ -30,7 +30,7 @@ class DogClassifier:
             raw = Image.open(file)
             img = self.prep(raw)
             
-            # 0=borzoi 1=dachshund
+            # 0=borzoi, 1=dachshund
             if 'borzoi' in file:
                 data.append(img)
                 target.append(0)
@@ -88,10 +88,10 @@ def grid_search(brain):
     f = open('params.txt', 'w')
     
     classifiers = {
-        'SVC'      : svm.SVC(random_state=37),
-        'NuSVC'    : svm.NuSVC(random_state=37),
-        'LinearSVC': svm.LinearSVC(random_state=37),
-        'SGD'      : SGDClassifier(random_state=37, loss='hinge'),
+        'SVC'      : svm.SVC(random_state=42),
+        'NuSVC'    : svm.NuSVC(random_state=42),
+        'LinearSVC': svm.LinearSVC(random_state=42),
+        'SGD'      : SGDClassifier(random_state=42, loss='hinge'),
         }
     
     parameters = {
