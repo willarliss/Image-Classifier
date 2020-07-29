@@ -3,13 +3,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 from glob import glob
-from skimage import color
-from skimage.transform import resize
 from sklearn import svm
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import f1_score, confusion_matrix
 from sklearn.model_selection import StratifiedKFold, GridSearchCV
+
+import sys
+sys.path.append('path to Window_Filter.py')
+from Window_Filter import window
 
 
 
@@ -17,7 +19,7 @@ class DogClassifier:
     
     # Read in and prepare data. Accepts name of folder containing training data
     # and square dimension size of the data as arguments
-    def __init__(self, folder, size): 
+    def __init__(self, folder, size=200): 
         
         self.s = size
         files = glob(f'./{folder}/*')
@@ -27,8 +29,7 @@ class DogClassifier:
         for file in files:
             
             # Read image and preprocess
-            raw = Image.open(file)
-            img = self.prep(raw)
+            img = self.prep(file)
             
             # 0=borzoi, 1=dachshund
             if 'borzoi' in file:
@@ -36,31 +37,27 @@ class DogClassifier:
                 target.append(0)
             if 'dachshund' in file:
                 data.append(img)
-                target.append(1)            
+                target.append(1)   
             
         self.X = np.array(data)
         self.y = np.array(target)
     
     # Preprocess image data
-    def prep(self, img_raw):
+    def prep(self, f):
         
-        img_raw = np.array(img_raw)
-        img_sized = resize(img_raw, (self.s, self.s), anti_aliasing=True)
-        img_color = color.colorconv.rgb2gray(img_sized)
+        img_raw = Image.open(f).resize(
+            (self.s, self.s)
+            )
         
-        # Threshold image
-        thresh = (img_color.min()+img_color.max())/2 
-        img_thresh = np.where(img_color<thresh, 0, img_color)
-        
-        return np.concatenate([i for i in img_thresh])
-    
+        return window(img_raw)
+            
     # Train the classifier. Only fit the classifier if arg fit==True, otherwise 
     # training data X_train and y_train is not needed
     def train(self, classif, X_train=None, y_train=None, fit=True):
         
-        self.clf = Pipeline(
-            [('clf', classif)],
-            )
+        self.clf = Pipeline([
+            ('clf', classif),
+            ])
         
         if fit:
             self.clf.fit(X_train, y_train)
@@ -96,27 +93,27 @@ def grid_search(brain):
     
     parameters = {
         'SVC': {
-            'clf__kernel'       : ('linear', 'poly', 'rbf', 'sigmoid'),
+            'clf__kernel'       : ('poly', 'rbf', 'sigmoid'),
             'clf__degree'       : (2, 3, 4, 5), 
             'clf__gamma'        : ('scale', 'auto'),
             'clf__tol'          : (1e-2, 1e-3, 1e-4),
             },
         'NuSVC': {
             'clf__nu'           : (.4, .5, .6),
-            'clf__kernel'       : ('linear', 'poly', 'rbf', 'sigmoid'),
+            'clf__kernel'       : ('poly', 'rbf', 'sigmoid'),
             'clf__degree'       : (2, 3, 4, 5), 
-            'clf__gamma'        : ('scale', 'auto'),
+            'clf__gamma'        : ('scale', 'auto', 0.1),
             'clf__tol'          : (1e-2, 1e-3, 1e-4),
             },
         'LinearSVC': {      
             'clf__penalty'      : ('l1', 'l2'),
             'clf__loss'         : ('hinge', 'squared_hinge'),
             'clf__C'            : (1, 0.1, 0.01, 0.001),
-            'clf__tol'          : (1e-2, 1e-3, 1e-4, 1e-5),
+            'clf__tol'          : (1e-2, 1e-3, 1e-4),
             },
         'SGD': {
             'clf__penalty'      : ('l1', 'l2', 'elasticnet'),
-            'clf__alpha'        : (0.01, 0.001, 0.0001, 0.00001),
+            'clf__alpha'        : (0.01, 0.001, 0.0001),
             'clf__tol'          : (1e-2, 1e-3, 1e-4),
             'clf__learning_rate': ('constant', 'optimal', 'invscaling'),
             'clf__eta0'         : (0.5, 0.1, 0.001),
@@ -167,8 +164,8 @@ def cross_validation(brain):
     plt.imshow(sum(cm), interpolation='nearest')
     plt.title(name)
     plt.colorbar()
-    plt.xticks(range(2))
-    plt.yticks(range(2))    
+    plt.xticks(np.arange(2))
+    plt.yticks(np.arange(2))    
     plt.ylabel('true value')
     plt.xlabel('prediction')
     
@@ -185,13 +182,13 @@ def build_pkl(brain):
     
     
 
-def deploy_pkl(raw):
+def deploy_pkl(file):
     
     with open('model.pkl', 'rb') as f:
 
         model = pickle.load(f)
         
-        img = np.array([model[0](raw)])
+        img = np.array([model[0](file)])
         pred = model[1].predict(img)
         
         [print('DACHSHUND') if pred == 1 else print('BORZOI')]
@@ -199,14 +196,13 @@ def deploy_pkl(raw):
     
     
 if __name__ == '__main__':
-    
+        
     model = DogClassifier(folder='images', size=200)
     
-    #grid_search(model)
-    #cross_validation(model)
-    #build_pkl(model)
+    # grid_search(model)
+    # cross_validation(model)
+    # build_pkl(model)
     
-    #file = Image.open('images\\test.jpg')
-    #deploy_pkl(model, file)
-    
+    # file = Image.open('images\\test.jpg')
+    # deploy_pkl(model, file)
     
