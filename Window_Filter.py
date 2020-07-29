@@ -176,3 +176,4 @@ def window(array_full, size=10, mode='eig', pad=1, stride='default'):
     return np.array(output_full)
 
 ##============================================================================
+   
