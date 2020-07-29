@@ -9,7 +9,6 @@ def window(array_full, size=10, mode='eig', pad=1, stride='default'):
     comp = lambda x: ((x+size)//size)*size - x
 
     assert size >= 1
-    assert mode in ['eig', 'mean', 'sum', 'med', 'max']
     assert len(array_full.shape) >= 2
     assert pad in [0, 1]
     assert stride == 'default' or type(stride) == int
@@ -77,20 +76,13 @@ def window(array_full, size=10, mode='eig', pad=1, stride='default'):
                     break
                 
                 if mode == 'eig':
-                    filt = np.max(np.linalg.eig(win)[0].real)
-                    output = np.append(output, [filt], axis=0)
-                if mode == 'mean':
-                    filt = np.mean(win)
-                    output = np.append(output, [filt], axis=0)
-                if mode == 'sum':
-                    filt = np.sum(win)
-                    output = np.append(output, [filt], axis=0)
-                if mode == 'med':
-                    filt = np.median(win)
-                    output = np.append(output, [filt], axis=0)        
-                if mode == 'max':
-                    filt = np.max(win)
-                    output = np.append(output, [filt], axis=0)
+                    eigen_values = np.linalg.eig(win)[0].real
+                    idx = np.argmax(np.abs(eigen_values))
+                    decomp = eigen_values[idx]
+                    output = np.append(output, [decomp], axis=0)
+                else:
+                    decomp = mode(win)
+                    output = np.append(output, [decomp], axis=0)
                     
                 x1, x2 = x1+stride, x2+stride
                 if x1 >= array.shape[1] - size+1:
@@ -152,20 +144,13 @@ def window(array_full, size=10, mode='eig', pad=1, stride='default'):
                 break
 
             if mode == 'eig':
-                filt = np.max(np.linalg.eig(win)[0].real)
-                output_full = np.append(output_full, [filt], axis=0)
-            if mode == 'mean':
-                filt = np.mean(win)
-                output_full = np.append(output_full, [filt], axis=0)
-            if mode == 'sum':
-                filt = np.max(win)
-                output_full = np.append(output_full, [filt], axis=0)
-            if mode == 'med':
-                filt = np.median(win)
-                output_full = np.append(output_full, [filt], axis=0)
-            if mode == 'max':
-                filt = np.max(win)
-                output_full = np.append(output_full, [filt], axis=0)
+                eigen_values = np.linalg.eig(win)[0].real
+                idx = np.argmax(np.abs(eigen_values))
+                decomp = eigen_values[idx]           
+                output_full = np.append(output_full, [decomp], axis=0)
+            else:
+                decomp = mode(win)
+                output_full = np.append(output_full, [decomp], axis=0)
 
             x1, x2 = x1+stride, x2+stride
             if x1 >= array.shape[1] - size+1:
@@ -176,4 +161,4 @@ def window(array_full, size=10, mode='eig', pad=1, stride='default'):
     return np.array(output_full)
 
 ##============================================================================
-   
+    
