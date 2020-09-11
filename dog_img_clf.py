@@ -11,7 +11,7 @@ from sklearn.model_selection import StratifiedKFold, GridSearchCV
 
 import sys
 sys.path.append('path to Window_Filter.py')
-from Window_Filter import window
+from window_filter import window
 
 
 
